@@ -91,10 +91,10 @@ You run the master once and then the slaves how many times you want, I go for `u
 example, if I want to do 1800 users, I will run 6 slaves (6 * 300 = 1800).
 
     # master
-    docker run graphhopper/load-testing:latest ./run --debug -p vrp -d 600s -u 600 --master --expect-slaves=2 [example.com]
+    ./run --debug -p vrp -d 600s -u 600 --master --expect-slaves=2 [example.com]
 
     # slave
-    docker run graphhopper/load-testing:latest ./run --debug -p vrp --vrp-max-locations 5 --slave --master-host=[master-ip] [example.com]
+    ./run --debug -p vrp --vrp-max-locations 5 --slave --master-host=[master-ip] [example.com]
 
 The `[master-ip]` can be `127.0.0.1`, if you're running other instances on the same machine, which
 we do a lot.
