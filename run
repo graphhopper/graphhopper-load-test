@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""Load test GraphHopper
+
+Usage:
+  run <host> [--duration=<length>] [--users=<cnt>] [--personas=<list>] [--custom-output] [--debug] [--no-dirigent] [--vrp-tomtom-probability <prob>] [--vrp-profiles <profiles>] [--points <points>] [--num-points <num_points>] [--vrp-max-profiles <vrp_max_profiles>] [--vrp-max-locations <vrp_max_locations>] [--master] [--expect-slaves <clients_count>] [--slave] [--master-host <IP>] [--api-key <api_key>]
+
+Options:
+  -h --help                                Show this screen.
+  <host>                                   Dirigent host, e.g. `https://localhost`.
+  -d <length>, --duration <length>         Duration of the load-test, e.g. 60s, 20m [default: 1m].
+  -u <cnt>, --users <cnt>                  Users count to simultaneously hit GraphHopper [default: 100].
+  -p <personas> --personas=<personas>      The comma-separated list of personas to use. Can use a combination of: vrp, route, route_invalid, isochrone [default: vrp,route,isochrone].
+  --custom-output                          Use custom results output that does not spam with intermediate results.
+  --no-dirigent                            The host supplied is a routing service (e.g. VRP), no Dirigent is involved so there's not URI path rewrite.
+  --debug                                  Switch debugging for error requests.
+  --vrp-tomtom-probability <prob>          When doing VRP /optimize requests, what's the probability that an eligible requests (e.g. car) will use TomTom data [default: 0.2].
+  --vrp-profiles <profiles>                A comma-separated list of allowed profiles, e.g. car,truck,small_truck. Possible values: car, bike, foot, hike, mtb, racingbike, scooter, truck, small_truck. [default: car]
+  --points <points>                        A points query for matrix or routing, e.g. point=52.517429%2C13.389083&point=52.522018%2C13.386669.
+  --num-points <num_points>                The number of points for matrix and routing queries. This setting is mutually exclusive with the --points option.
+  --vrp-max-profiles <vrp_max_profiles>    The max of different VRP vehicle profiles to use. [default: 1]
+  --vrp-max-locations <vrp_max_locations>  The max locations for the services. [default: 10]
+  --master                                 Should this run be a master in a master/slave configuration with multiple clients?
+  --expect-slaves <clients_count>          If master is set, how many clients do we expect?
+  --slave                                  Should this run be a slave in a master/slave configuration?
+  --master-host <IP>                       If slave is set, where is the master running?
+  --api-key <api_key>                      Use a custom Dirigent API key
+
+"""
+from docopt import docopt
+from utils import color
+import invokust
+import main
+import os
+import subprocess
+import sys
+import time
+
+
+def get_settings():
+    # set arguments
+    args = docopt(__doc__)
+    settings = {}
+    settings["host"] = (
+        args["<host>"] if "http" in args["<host>"] else f"https://{args['<host>']}"
+    )
+    settings["users"] = args["--users"]
+    settings["duration"] = args["--duration"]
+    settings["custom-output"] = args["--custom-output"]
+    settings["no-dirigent"] = args["--no-dirigent"]
+
+    # set personas
+    persona_mapping = {
+        "vrp": "PersonaVRP",
+        "matrix": "PersonaMatrix",
+        "route": "PersonaRoute",
+        "route_invalid": "PersonaRouteInvalid",
+        "isochrone": "PersonaIsochrone",
+    }
+    personas = args["--personas"].split(",")
+    for persona in personas:
+        if persona not in persona_mapping:
+            available = ", ".join(list(persona_mapping.keys()))
+            msg = f"Persona {persona} is not supported, you can use a combination of [{available}]."
+            sys.exit(msg)
+    settings["personas_arg"] = " ".join(persona_mapping[p] for p in personas)
+
+    # set custom class settings
+    # there's no way to pass params to Locust classes, so an environment will have to do
+    vrp_tomtom_probability = float(args["--vrp-tomtom-probability"])
+    if vrp_tomtom_probability > 1.0 or vrp_tomtom_probability < 0.0:
+        print("The --vrp-tomtom-probability parameter must be within 0.0 and 1.0.")
+        sys.exit(1)
+    os.environ["VRP_TOMTOM_PROBABILITY"] = str(vrp_tomtom_probability)
+    os.environ["VRP_PROFILES"] = args["--vrp-profiles"]
+    if args["--points"]:
+        os.environ["QUERY_POINTS"] = args["--points"]
+    if args["--num-points"]:
+        os.environ["QUERY_POINTS_NUM"] = args["--num-points"]
+    if args["--api-key"]:
+        os.environ["API_KEY"] = args["--api-key"]
+    os.environ["VRP_MAX_PROFILES"] = args["--vrp-max-profiles"]
+    os.environ["VRP_MAX_LOCATIONS"] = args["--vrp-max-locations"]
+    os.environ["DEBUG"] = "yes" if args["--debug"] else "no"
+
+    # master/slave
+    settings["master"] = args["--master"]
+    settings["expect-slaves"] = args["--expect-slaves"]
+    settings["slave"] = args["--slave"]
+    settings["master-host"] = args["--master-host"]
+
+    os.environ["PYTHONWARNINGS"] = "ignore:Unverified HTTPS request"
+
+    return settings
+
+
+def run_locust(settings):
+    if settings["no-dirigent"]:
+        os.environ["NO_DIRIGENT"] = "yes"
+    if settings["custom-output"]:
+        run_locust_from_python(settings)
+    else:
+        run_locust_from_shell(settings)
+
+
+def run_locust_from_shell(settings):
+    cmd = (
+        f"locust --no-web --host {settings['host']} "
+        f"-c {settings['users']} -r {settings['users']}"
+    )
+    if not settings["slave"]:
+        cmd += f" --run-time {settings['duration']}"
+    if settings["master"]:
+        cmd += f" --master --expect-slaves={settings['expect-slaves']}"
+    if settings["slave"]:
+        cmd += f" --slave --master-host={settings['master-host']}"
+    cmd += f" -f main.py {settings['personas_arg']}"
+    subprocess.run(cmd.split(" "))
+
+
+def run_locust_from_python(settings):
+    locust_settings = invokust.create_settings(
+        classes=[
+            getattr(main, cls_name) for cls_name in settings["personas_arg"].split(" ")
+        ],
+        host=settings["host"],
+        num_clients=settings["users"],
+        hatch_rate=settings["users"],
+        run_time=settings["duration"],
+    )
+
+    loadtest = invokust.LocustLoadTest(locust_settings)
+    loadtest.run()
+    stats = loadtest.stats()
+    print_results(stats)
+
+
+def print_results(data):
+    print(
+        f"{'Name':<30} {'# reqs':>7} {'# fails':>12} {'Avg':>7} {'Min':>7} {'Max':>7}  | {'Median':>7} {'req/s':>7}"
+    )
+    print("-" * 94)
+    for name, page in data["requests"].items():
+        for c in [
+            "min_response_time",
+            "max_response_time",
+            "avg_response_time",
+            "median_response_time",
+        ]:
+            page[c] = (
+                f"{float(page[c]):>7.0f}" if page[c] is not None else f"{'N/A':>7}"
+            )
+
+        nice_name = name.replace("_", " ")
+        num_fails = (
+            0 if name not in data["failures"] else data["failures"][name]["occurences"]
+        )
+        print(
+            f"{nice_name:<30} {page['num_requests']:>7} {num_fails:>12} {page['avg_response_time']} {page['min_response_time']} {page['max_response_time']}  | {page['median_response_time']} {page['total_rps']:>7.2f}"
+        )
+    print("-" * 94)
+    pages = data["requests"].values()
+    total_num_requests = sum(page["num_requests"] for page in pages)
+    total_num_failures = sum(f["occurences"] for f in data["failures"].values())
+    total_rps = sum(page["total_rps"] for page in pages)
+    print(
+        f"{'Total':<30} {total_num_requests:>7} {total_num_failures:>12} {' ':>34} {total_rps:>7.2f}"
+    )
+
+    # Errors
+    print("")
+    errors = sorted(data["failures"].values(), key=lambda x: -x["occurences"])
+    if not errors:
+        print(color.green_bg("No errors!"))
+    else:
+        print(color.red_bg("Error report:"))
+        print("# occurrences  Error")
+        print("-" * 140)
+        for error in errors:
+            msg = f"{error['method']} {error['name']}: {error['error']}"
+            print(f"{error['occurences']:>13}  {msg}")
+        print("-" * 140)
+
+
+def print_info(settings):
+    print(color.green_bg("Running Locust."))
+    print("")
+    print("Host:     {}".format(color.green_bg(settings["host"])))
+    print("Users:    {}".format(color.green_bg(settings["users"])))
+    print("Duration: {}".format(color.green_bg(settings["duration"])))
+    print("Personas: {}".format(color.green_bg(settings["personas_arg"])))
+
+
+if __name__ == "__main__":
+
+    settings = get_settings()
+    print_info(settings)
+    run_locust(settings)

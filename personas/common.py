@@ -1,0 +1,68 @@
+import json
+import os
+import random
+
+from locust import events
+
+
+def get_api_key():
+    if "API_KEY" in os.environ:
+        return os.environ["API_KEY"]
+    return "todotodo2"
+
+
+def get_random_berlin_point():
+    """For the GraphHopper Berlin area."""
+    return [
+        random.uniform(52.522906, 52.561958),
+        random.uniform(13.347702, 13.437996)
+    ]
+
+
+def get_base_url(service_subpath, subpath_required=True):
+    """Call it e.g. `get_base_url("vrp")` to get `/api/1/vrp`."""
+    use_dirigent = True
+    if "NO_DIRIGENT" in os.environ and os.environ["NO_DIRIGENT"].lower()[0] == "y":
+        use_dirigent = False
+    suffix = "" if not subpath_required and not use_dirigent else f"/{service_subpath}"
+    base_url = f"/api/1{suffix}" if use_dirigent else suffix
+    return base_url
+
+
+def get_points_query(task_set):
+    """Generate or load the points query parameters."""
+
+    # the query possibly hardcoded in environment?
+    if "QUERY_POINTS" in os.environ:
+        return os.environ["QUERY_POINTS"]
+
+    # get the bounding box from the /info
+    info_uri = get_base_url("info")
+    api_key = get_api_key()
+    url = f"{info_uri}?key={api_key}"
+    headers = {"content-type": "application/json"}
+    with task_set.client.post(url, catch_response=True, headers=headers, name="Info", timeout=3) as response:
+        try:
+            data = response.json()
+        except json.decoder.JSONDecodeError as e:
+            response.failure("Info failed: {}".format(e))
+            return
+        if "bbox" not in data:
+            response.failure(f"No bounding box in info: {data}")
+            return
+
+    # get a point in the middle of the bounding box (if not at (0, 0))
+    lon1, lat1, lon2, lat2 = data["bbox"]
+    lon, lat = [(lon2 + lon1) / 2, (lat2 + lat1) / 2]
+    if lon < 1.0 and lon > -1.0:  # make sure we don't strike at 0.0
+        lon, lat = max(lon1, lon2) / 2, max(lat1, lat2) / 2
+
+    num_points = 3 if "QUERY_POINTS_NUM" not in os.environ else int(os.environ["QUERY_POINTS_NUM"])
+    return "&".join([f"point={lat},{lon}" for _ in range(num_points)])
+
+
+def setup_locust_debugging():
+    if "DEBUG" in os.environ and os.environ["DEBUG"] == "yes":
+        def report_error(request_type, name, response_time, exception, **kwargs):
+            print(f"Request {name} ({request_type}) failed: {exception}", flush=True)
+        events.request_failure += report_error
