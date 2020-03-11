@@ -19,16 +19,6 @@ def get_random_berlin_point():
     ]
 
 
-def get_base_url(service_subpath, subpath_required=True):
-    """Call it e.g. `get_base_url("vrp")` to get `/api/1/vrp`."""
-    use_dirigent = True
-    if "NO_DIRIGENT" in os.environ and os.environ["NO_DIRIGENT"].lower()[0] == "y":
-        use_dirigent = False
-    suffix = "" if not subpath_required and not use_dirigent else f"/{service_subpath}"
-    base_url = f"/api/1{suffix}" if use_dirigent else suffix
-    return base_url
-
-
 def get_points_query(task_set):
     """Generate or load the points query parameters."""
 
@@ -37,7 +27,7 @@ def get_points_query(task_set):
         return os.environ["QUERY_POINTS"]
 
     # get the bounding box from the /info
-    info_uri = get_base_url("info")
+    info_uri = get_service_url("info")
     api_key = get_api_key()
     url = f"{info_uri}?key={api_key}"
     headers = {"content-type": "application/json"}

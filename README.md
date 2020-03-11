@@ -32,18 +32,23 @@ Run the following to see the help page on how to run this tool.
 
 ### Basic usage
 
-    ./run -p vrp -d 10s -u 10 [example.com]
+    ./run -p vrp -d 10s -u 10 <example.com>
 
 In its most basic form, all you need to do to start a load testing session, is to configure:
-* Personas used with `-p`. E.g. for VRP, use `vrp`. You can also combine multiple by separating them
-  with a comma. Check the help (`./run -h`) to see all the available personas.
+* Persona used with `-p`. E.g. for VRP, use `vrp`. Check the help (`./run -h`) to see all the
+  available personas.
 * Duration with `-d`, e.g. `300s` for 300 seconds or `20m` for 20 minutes.
 * The number of users with `-u`. In general, each user will run the associated task every second or
   so. Technically, the wait time is [`random.expovariate`](https://docs.python.org/3.7/library/random.html#random.expovariate)(1),
   meaning an average of 1 second. Though VRP is more complex as it does an optimize and then
   solutions. The ramp-up of users will be instantaneous as the ramp-up is set to the number of
   users.
-* The host at the end.
+* The base URL. This is where the base of the service is deployed. A few examples:
+  * If you're testing the matrix service at `/matrix` on HTTPS, then the base URL would be
+    `https://example.com/`.
+  * If you're testing the VRP service at `/api/1/vrp` on port 8080, then the base URL would be
+    `http://example.com:8080/api/1/vrp`. VRP is a bit special, in this regard, as the VRP
+    subpath of the URL might get cut off from the final URL, depending on implementation.
 
 ### Three ways of running
 
@@ -58,14 +63,6 @@ technical and it would be best to have just one, but here we are.
 * Using `locust` (`docker run graphhopper/load-testing locust`). This is for times when you want to
   use some Locust functionality that is not yet included in `./run`. If this happens, we should
   probably add support for the missing feature in the `./run` command.
-
-### Skipping Dirigent
-
-Sometimes you want to load test a service directly without going through Dirigent. For example, we
-could load test the VRP service directly.
-
-In that case, use the `--no-dirigent` option. Also make sure that the ports are open. This will
-modify the URLs, e.g. remove the `/api/1` URL part, etc.
 
 ### Debugging errors
 
@@ -91,10 +88,10 @@ You run the master once and then the slaves how many times you want, I go for `u
 example, if I want to do 1800 users, I will run 6 slaves (6 * 300 = 1800).
 
     # master
-    ./run --debug -p vrp -d 600s -u 600 --master --expect-slaves=2 [example.com]
+    ./run --debug -p vrp -d 600s -u 600 --master --expect-slaves=2 <example.com>
 
     # slave
-    ./run --debug -p vrp --vrp-max-locations 5 --slave --master-host=[master-ip] [example.com]
+    ./run --debug -p vrp --vrp-max-locations 5 --slave --master-host=<master-ip> <example.com>
 
-The `[master-ip]` can be `127.0.0.1`, if you're running other instances on the same machine, which
+The `<master-ip>` can be `127.0.0.1`, if you're running other instances on the same machine, which
 we do a lot.

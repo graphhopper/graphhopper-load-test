@@ -19,8 +19,6 @@ class PersonaTaskSet(TaskSet):
     @task
     def get_vrp(self):
 
-        base_url = common.get_base_url("vrp", subpath_required=False)
-
         # set a payload of random locations
         vehicles, vehicle_types = get_random_vehicles_and_types(self.max_profiles)
         data = {
@@ -31,7 +29,7 @@ class PersonaTaskSet(TaskSet):
         payload = json.dumps(data)
 
         # optimize
-        url = f"{base_url}/optimize?key={self.api_key}"
+        url = f"/optimize?key={self.api_key}"
         headers = {"content-type": "application/json"}
         with self.client.post(url, catch_response=True, data=payload, headers=headers, name="VRP complex Optimize", timeout=60) as response:
             try:
@@ -46,7 +44,7 @@ class PersonaTaskSet(TaskSet):
             job_id = response.json()["job_id"]
 
         while True:
-            url = f"{base_url}/solution/{job_id}?key={self.api_key}"
+            url = f"/solution/{job_id}?key={self.api_key}"
             with self.client.get(url, catch_response=True, name="VRP complex Solution", timeout=60) as response:
                 try:
                     response_data = response.json()

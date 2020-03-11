@@ -13,7 +13,7 @@ class PersonaTaskSet(TaskSet):
 
     @task
     def get_route(self):
-        base_url = common.get_base_url("route")
+        base_url = "/route"
         path = f"{base_url}?{self.points_query}&key={self.api_key}"
         self.client.get(path, name="Route")
 

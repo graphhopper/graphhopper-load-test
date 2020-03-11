@@ -2,16 +2,15 @@
 """Load test GraphHopper
 
 Usage:
-  run <host> [--duration=<length>] [--users=<cnt>] [--personas=<list>] [--custom-output] [--debug] [--no-dirigent] [--vrp-tomtom-probability <prob>] [--vrp-profiles <profiles>] [--points <points>] [--num-points <num_points>] [--vrp-max-profiles <vrp_max_profiles>] [--vrp-max-locations <vrp_max_locations>] [--master] [--expect-slaves <clients_count>] [--slave] [--master-host <IP>] [--api-key <api_key>]
+  run <base_url> [--persona=<persona>] [--duration=<length>] [--users=<cnt>] [--custom-output] [--debug] [--vrp-tomtom-probability <prob>] [--vrp-profiles <profiles>] [--points <points>] [--num-points <num_points>] [--vrp-max-profiles <vrp_max_profiles>] [--vrp-max-locations <vrp_max_locations>] [--master] [--expect-slaves <clients_count>] [--slave] [--master-host <IP>] [--api-key <api_key>]
 
 Options:
   -h --help                                Show this screen.
-  <host>                                   Dirigent host, e.g. `https://localhost`.
+  <base_url>                               GraphHopper base URL, e.g. `https://example.com/api/1` or `https://localhost`.
   -d <length>, --duration <length>         Duration of the load-test, e.g. 60s, 20m [default: 1m].
   -u <cnt>, --users <cnt>                  Users count to simultaneously hit GraphHopper [default: 100].
-  -p <personas> --personas=<personas>      The comma-separated list of personas to use. Can use a combination of: vrp, route, route_invalid, isochrone [default: vrp,route,isochrone].
+  -p <persona> --persona=<persona>         The persona to use. Possible values: vrp, route, route_invalid, isochrone.
   --custom-output                          Use custom results output that does not spam with intermediate results.
-  --no-dirigent                            The host supplied is a routing service (e.g. VRP), no Dirigent is involved so there's not URI path rewrite.
   --debug                                  Switch debugging for error requests.
   --vrp-tomtom-probability <prob>          When doing VRP /optimize requests, what's the probability that an eligible requests (e.g. car) will use TomTom data [default: 0.2].
   --vrp-profiles <profiles>                A comma-separated list of allowed profiles, e.g. car,truck,small_truck. Possible values: car, bike, foot, hike, mtb, racingbike, scooter, truck, small_truck. [default: car]
@@ -40,15 +39,14 @@ def get_settings():
     # set arguments
     args = docopt(__doc__)
     settings = {}
-    settings["host"] = (
-        args["<host>"] if "http" in args["<host>"] else f"https://{args['<host>']}"
-    )
+    settings["base_url"] = (
+        args["<base_url>"] if "http" in args["<base_url>"] else f"https://{args['<base_url>']}"
+    ).strip("/")
     settings["users"] = args["--users"]
     settings["duration"] = args["--duration"]
     settings["custom-output"] = args["--custom-output"]
-    settings["no-dirigent"] = args["--no-dirigent"]
 
-    # set personas
+    # set persona
     persona_mapping = {
         "vrp": "PersonaVRP",
         "matrix": "PersonaMatrix",
@@ -56,13 +54,11 @@ def get_settings():
         "route_invalid": "PersonaRouteInvalid",
         "isochrone": "PersonaIsochrone",
     }
-    personas = args["--personas"].split(",")
-    for persona in personas:
-        if persona not in persona_mapping:
-            available = ", ".join(list(persona_mapping.keys()))
-            msg = f"Persona {persona} is not supported, you can use a combination of [{available}]."
-            sys.exit(msg)
-    settings["personas_arg"] = " ".join(persona_mapping[p] for p in personas)
+    persona = args["--persona"]
+    if persona not in persona_mapping:
+        available = ", ".join(list(persona_mapping.keys()))
+        sys.exit(f"Persona {persona} is not supported, you can use any of [{available}].")
+    settings["persona_arg"] = persona_mapping[persona]
 
     # set custom class settings
     # there's no way to pass params to Locust classes, so an environment will have to do
@@ -94,8 +90,6 @@ def get_settings():
 
 
 def run_locust(settings):
-    if settings["no-dirigent"]:
-        os.environ["NO_DIRIGENT"] = "yes"
     if settings["custom-output"]:
         run_locust_from_python(settings)
     else:
@@ -104,7 +98,7 @@ def run_locust(settings):
 
 def run_locust_from_shell(settings):
     cmd = (
-        f"locust --no-web --host {settings['host']} "
+        f"locust --no-web --host {settings['base_url']} "
         f"-c {settings['users']} -r {settings['users']}"
     )
     if not settings["slave"]:
@@ -113,16 +107,14 @@ def run_locust_from_shell(settings):
         cmd += f" --master --expect-slaves={settings['expect-slaves']}"
     if settings["slave"]:
         cmd += f" --slave --master-host={settings['master-host']}"
-    cmd += f" -f main.py {settings['personas_arg']}"
+    cmd += f" -f main.py {settings['persona_arg']}"
     subprocess.run(cmd.split(" "))
 
 
 def run_locust_from_python(settings):
     locust_settings = invokust.create_settings(
-        classes=[
-            getattr(main, cls_name) for cls_name in settings["personas_arg"].split(" ")
-        ],
-        host=settings["host"],
+        classes=[getattr(main, settings["persona_arg"])],
+        host=settings["base_url"],
         num_clients=settings["users"],
         hatch_rate=settings["users"],
         run_time=settings["duration"],
@@ -184,10 +176,10 @@ def print_results(data):
 def print_info(settings):
     print(color.green_bg("Running Locust."))
     print("")
-    print("Host:     {}".format(color.green_bg(settings["host"])))
+    print("Base URL: {}".format(color.green_bg(settings["base_url"])))
     print("Users:    {}".format(color.green_bg(settings["users"])))
     print("Duration: {}".format(color.green_bg(settings["duration"])))
-    print("Personas: {}".format(color.green_bg(settings["personas_arg"])))
+    print("Persona:  {}".format(color.green_bg(settings["persona_arg"])))
 
 
 if __name__ == "__main__":

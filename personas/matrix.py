@@ -13,9 +13,9 @@ class PersonaTaskSet(TaskSet):
 
     @task
     def get_matrix(self):
-        base_url = common.get_base_url("matrix")        
+        base_url = "/matrix"
         path = f"{base_url}?{self.points_query}&key={self.api_key}"
-        self.client.get(path, name="Matrix")
+        self.client.get(path, name="Matrix", verify=False)
 
 
 class PersonaMatrix(HttpLocust):
