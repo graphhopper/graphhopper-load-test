@@ -5,10 +5,11 @@ import random
 from locust import events
 
 
-def get_api_key():
-    if "API_KEY" in os.environ:
-        return os.environ["API_KEY"]
-    return "todotodo2"
+def get_api_key_url_suffix(prefix):
+    """Return something like `?key=1234567890` or empty if no key set"""
+    if "API_KEY" not in os.environ:
+        return ""
+    return f"{prefix}key={os.environ['API_KEY']}"
 
 
 def get_random_berlin_point():
@@ -28,8 +29,8 @@ def get_points_query(task_set):
 
     # get the bounding box from the /info
     info_uri = get_service_url("info")
-    api_key = get_api_key()
-    url = f"{info_uri}?key={api_key}"
+    api_key_url_suffix = get_api_key_url_suffix("?")
+    url = f"{info_uri}{api_key_url_suffix}"
     headers = {"content-type": "application/json"}
     with task_set.client.post(url, catch_response=True, headers=headers, name="Info", timeout=3) as response:
         try:

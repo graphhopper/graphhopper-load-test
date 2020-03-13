@@ -7,14 +7,14 @@ class PersonaTaskSet(TaskSet):
 
     def on_start(self):
         self.client.verify = False
-        self.api_key = common.get_api_key()
+        self.api_key_url_suffix = common.get_api_key_url_suffix("&")
         self.points_query = common.get_points_query(self)
         common.setup_locust_debugging()
 
     @task
     def get_matrix(self):
         base_url = "/matrix"
-        path = f"{base_url}?{self.points_query}&key={self.api_key}"
+        path = f"{base_url}?{self.points_query}{self.api_key_url_suffix}"
         self.client.get(path, name="Matrix", verify=False)
 
 
