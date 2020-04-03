@@ -3,7 +3,9 @@ import json
 import random
 import os
 import time
-from locust import events, HttpLocust, TaskSet, task
+from locust import events, TaskSet, task
+from locust.contrib.fasthttp import FastHttpLocust
+from locust.wait_time import constant_pacing
 
 from personas import common
 
@@ -62,9 +64,12 @@ class PersonaTaskSet(TaskSet):
                 time.sleep(0.33) # maximum 3 GET requests per second
 
 
-class PersonaVRP(HttpLocust):
+class PersonaVRP(FastHttpLocust):
     task_set = PersonaTaskSet
     weight = 10
+    network_timeout = 3.0
+    connection_timeout = 3.0
+    wait_time = constant_pacing(1.0)
 
 
 def get_random_vehicles_and_types(max_profiles):
