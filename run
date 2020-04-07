@@ -98,7 +98,7 @@ def run_locust(settings):
 
 def run_locust_from_shell(settings):
     cmd = (
-        f"locust --no-web --host {settings['base_url']} "
+        f"locust --headless --host {settings['base_url']} "
         f"-c {settings['users']} -r {settings['users']}"
     )
     if not settings["slave"]:

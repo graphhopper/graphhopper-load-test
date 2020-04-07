@@ -20,7 +20,7 @@ class PersonaTaskSet(TaskSet):
 
 
 class PersonaRouteInvalid(FastHttpLocust):
-    task_set = PersonaTaskSet
+    tasks = [PersonaTaskSet]
     weight = 1
     network_timeout = 3.0
     connection_timeout = 3.0

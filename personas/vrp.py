@@ -50,7 +50,7 @@ class PersonaTaskSet(TaskSet):
             with self.client.get(url, catch_response=True, name="VRP complex Solution", timeout=60) as response:
                 try:
                     response_data = response.json()
-                except json.decoder.JSONDecodeError as e:
+                except (json.decoder.JSONDecodeError, TypeError) as e:
                     response.failure("VRP solution failed, json decode error: {}\nCode: {}, Response text: {}".format(e, response.status_code, response.text))
                     return
                 if response.status_code == 400:
@@ -65,7 +65,7 @@ class PersonaTaskSet(TaskSet):
 
 
 class PersonaVRP(FastHttpLocust):
-    task_set = PersonaTaskSet
+    tasks = [PersonaTaskSet]
     weight = 10
     network_timeout = 3.0
     connection_timeout = 3.0
