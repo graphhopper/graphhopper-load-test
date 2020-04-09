@@ -22,7 +22,7 @@ you can use Docker. In this case prepend all the commands that you see below wit
 
 If, on the other hand, you're familiar with Python and its packaging system, you can first set up
 your environment as you see fit (e.g. using virtual environment). The only thing that is required
-is to install the packages in `requirements.txt`.
+is to install the packages in `requirements.txt`, usually done with `pip install -r requirements.txt`.
 
 ### Get help
 
