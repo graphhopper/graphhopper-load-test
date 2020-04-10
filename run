@@ -112,6 +112,11 @@ def run_locust_from_shell(settings):
 
 
 def run_locust_from_python(settings):
+    msg = ("I'm sorry, running the load test with some features that demand the programmatic "
+           "features of Locust is not supported yet because we're using latest Locust features, "
+           "that invokust doesn't support yet.")
+    print(msg)
+    sys.exit(1)
     locust_settings = invokust.create_settings(
         classes=[getattr(main, settings["persona_arg"])],
         host=settings["base_url"],
