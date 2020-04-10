@@ -56,4 +56,4 @@ def setup_locust_debugging():
     if "DEBUG" in os.environ and os.environ["DEBUG"] == "yes":
         def report_error(request_type, name, response_time, exception, **kwargs):
             print(f"Request {name} ({request_type}) failed: {exception}", flush=True)
-        events.request_failure += report_error
+        events.request_failure.add_listener(report_error)
