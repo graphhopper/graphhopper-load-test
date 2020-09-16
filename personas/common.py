@@ -28,7 +28,7 @@ def get_points_query(task_set):
         return os.environ["QUERY_POINTS"]
 
     # get the bounding box from the /info
-    info_uri = get_service_url("info")
+    info_uri = "/info"
     api_key_url_suffix = get_api_key_url_suffix("?")
     url = f"{info_uri}{api_key_url_suffix}"
     headers = {"content-type": "application/json"}

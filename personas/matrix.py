@@ -15,7 +15,7 @@ class PersonaTaskSet(TaskSet):
 
     @task
     def get_matrix(self):
-        base_url = "/matrix"
+        base_url = "/route"
         path = f"{base_url}?{self.points_query}{self.api_key_url_suffix}"
         self.client.get(path, name="Matrix", verify=False)
 
