@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import requests
 
 from locust import events
 
@@ -31,19 +32,23 @@ def get_points_query(task_set):
     info_uri = "/info"
     api_key_url_suffix = get_api_key_url_suffix("?")
     url = f"{info_uri}{api_key_url_suffix}"
+    full_url = f"{task_set.user.host}{url}"
     headers = {"content-type": "application/json"}
-    with task_set.client.post(url, catch_response=True, headers=headers, name="Info", timeout=3) as response:
-        if response.text is None:
-            response.failure("Info failed: no response from the info endpoint.")
-            return
-        try:
-            data = response.json()
-        except json.decoder.JSONDecodeError as e:
-            response.failure("Info failed: {}".format(e))
-            return
-        if "bbox" not in data:
-            response.failure(f"No bounding box in info: {data}")
-            return
+    try:
+        response = requests.get(full_url, headers=headers, timeout=3)
+    except:
+        raise Exception(f"Can't get info from {full_url}.")
+    if response.text is None:
+        response.failure("Info failed: no response from the info endpoint.")
+        return
+    try:
+        data = response.json()
+    except json.decoder.JSONDecodeError as e:
+        response.failure("Info failed: {}".format(e))
+        return
+    if "bbox" not in data:
+        response.failure(f"No bounding box in info: {data}")
+        return
 
     # get a point in the middle of the bounding box (if not at (0, 0))
     lon1, lat1, lon2, lat2 = data["bbox"]
