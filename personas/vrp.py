@@ -4,7 +4,7 @@ import random
 import os
 import time
 from locust import events, TaskSet, task
-from locust.contrib.fasthttp import FastHttpLocust
+from locust.contrib.fasthttp import FastHttpUser
 from locust.wait_time import constant_pacing
 
 from personas import common
@@ -34,11 +34,15 @@ class PersonaTaskSet(TaskSet):
         url = f"/optimize{self.api_key_url_suffix}"
         headers = {"content-type": "application/json"}
         with self.client.post(url, catch_response=True, data=payload, headers=headers, name="VRP complex Optimize", timeout=60) as response:
+            if response.text is None:
+                response.failure("VRP optimize failed, there was no response.")
+                return
             try:
                 response_data = response.json()
             except json.decoder.JSONDecodeError as e:
                 response.failure("VRP optimize failed, json decode error: {}\nCode: {}, Response text: {}".format(e, response.status_code, response.text))
                 return
+            #except TypeError as e:
             if "job_id" not in response_data:
                 response.failure(f"VRP optimize failed, no `job_id` in response. Response: {response_data}")
                 return
@@ -64,7 +68,7 @@ class PersonaTaskSet(TaskSet):
                 time.sleep(0.33) # maximum 3 GET requests per second
 
 
-class PersonaVRP(FastHttpLocust):
+class PersonaVRP(FastHttpUser):
     tasks = [PersonaTaskSet]
     weight = 10
     network_timeout = 3.0

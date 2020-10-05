@@ -1,6 +1,6 @@
 import random
 from locust import TaskSet, task
-from locust.contrib.fasthttp import FastHttpLocust
+from locust.contrib.fasthttp import FastHttpUser
 from locust.wait_time import constant_pacing
 
 from personas import common
@@ -19,7 +19,7 @@ class PersonaTaskSet(TaskSet):
         self.client.get(path, name="Route erratic")
 
 
-class PersonaRouteInvalid(FastHttpLocust):
+class PersonaRouteInvalid(FastHttpUser):
     tasks = [PersonaTaskSet]
     weight = 1
     network_timeout = 3.0

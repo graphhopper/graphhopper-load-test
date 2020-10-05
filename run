@@ -2,7 +2,7 @@
 """Load test GraphHopper
 
 Usage:
-  run <base_url> [--persona=<persona>] [--duration=<length>] [--users=<cnt>] [--custom-output] [--debug] [--vrp-tomtom-probability <prob>] [--vrp-profiles <profiles>] [--points <points>] [--num-points <num_points>] [--vrp-max-profiles <vrp_max_profiles>] [--vrp-max-locations <vrp_max_locations>] [--master] [--expect-slaves <clients_count>] [--slave] [--master-host <IP>] [--api-key <api_key>]
+  run <base_url> [--persona=<persona>] [--duration=<length>] [--users=<cnt>] [--custom-output] [--debug] [--vrp-tomtom-probability <prob>] [--vrp-profiles <profiles>] [--points <points>] [--num-points <num_points>] [--vrp-max-profiles <vrp_max_profiles>] [--vrp-max-locations <vrp_max_locations>] [--master] [--expect-workers <clients_count>] [--worker] [--master-host <IP>] [--api-key <api_key>]
 
 Options:
   -h --help                                Show this screen.
@@ -18,10 +18,10 @@ Options:
   --num-points <num_points>                The number of points for matrix and routing queries. This setting is mutually exclusive with the --points option.
   --vrp-max-profiles <vrp_max_profiles>    The max of different VRP vehicle profiles to use. [default: 1]
   --vrp-max-locations <vrp_max_locations>  The max locations for the services. [default: 10]
-  --master                                 Should this run be a master in a master/slave configuration with multiple clients?
-  --expect-slaves <clients_count>          If master is set, how many clients do we expect?
-  --slave                                  Should this run be a slave in a master/slave configuration?
-  --master-host <IP>                       If slave is set, where is the master running?
+  --master                                 Should this run be a master in a master/worker configuration with multiple clients?
+  --expect-workers <clients_count>         If master is set, how many clients do we expect?
+  --worker                                 Should this run be a worker in a master/worker configuration?
+  --master-host <IP>                       If worker is set, where is the master running?
   --api-key <api_key>                      Use a custom Dirigent API key
 
 """
@@ -78,10 +78,10 @@ def get_settings():
     os.environ["VRP_MAX_LOCATIONS"] = args["--vrp-max-locations"]
     os.environ["DEBUG"] = "yes" if args["--debug"] else "no"
 
-    # master/slave
+    # master/worker
     settings["master"] = args["--master"]
-    settings["expect-slaves"] = args["--expect-slaves"]
-    settings["slave"] = args["--slave"]
+    settings["expect-workers"] = args["--expect-workers"]
+    settings["worker"] = args["--worker"]
     settings["master-host"] = args["--master-host"]
 
     os.environ["PYTHONWARNINGS"] = "ignore:Unverified HTTPS request"
@@ -99,14 +99,14 @@ def run_locust(settings):
 def run_locust_from_shell(settings):
     cmd = (
         f"locust --headless --host {settings['base_url']} "
-        f"-c {settings['users']} -r {settings['users']}"
+        f"-u {settings['users']} -r {settings['users']}"
     )
-    if not settings["slave"]:
+    if not settings["worker"]:
         cmd += f" --run-time {settings['duration']}"
     if settings["master"]:
-        cmd += f" --master --expect-slaves={settings['expect-slaves']}"
-    if settings["slave"]:
-        cmd += f" --slave --master-host={settings['master-host']}"
+        cmd += f" --master --expect-workers={settings['expect-workers']}"
+    if settings["worker"]:
+        cmd += f" --worker --master-host={settings['master-host']}"
     cmd += f" -f main.py {settings['persona_arg']}"
     subprocess.run(cmd.split(" "))
 

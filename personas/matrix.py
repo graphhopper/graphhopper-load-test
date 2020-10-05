@@ -1,7 +1,7 @@
 from personas import common
 
 from locust import TaskSet, task
-from locust.contrib.fasthttp import FastHttpLocust
+from locust.contrib.fasthttp import FastHttpUser
 from locust.wait_time import constant_pacing
 
 
@@ -20,7 +20,7 @@ class PersonaTaskSet(TaskSet):
         self.client.get(path, name="Matrix", verify=False)
 
 
-class PersonaMatrix(FastHttpLocust):
+class PersonaMatrix(FastHttpUser):
     tasks = [PersonaTaskSet]
     weight = 1
     network_timeout = 3.0
