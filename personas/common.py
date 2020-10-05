@@ -33,6 +33,9 @@ def get_points_query(task_set):
     url = f"{info_uri}{api_key_url_suffix}"
     headers = {"content-type": "application/json"}
     with task_set.client.post(url, catch_response=True, headers=headers, name="Info", timeout=3) as response:
+        if response.text is None:
+            response.failure("Info failed: no response from the info endpoint.")
+            return
         try:
             data = response.json()
         except json.decoder.JSONDecodeError as e:
