@@ -34,9 +34,12 @@ import sys
 import time
 
 
+CURRENT_VERSION = "v1.0.0"
+
+
 def get_settings():
     # set arguments
-    args = docopt(__doc__, version="v1.0.0")
+    args = docopt(__doc__, version=CURRENT_VERSION)
     settings = {}
     settings["base_url"] = (
         args["<base_url>"] if "http" in args["<base_url>"] else f"https://{args['<base_url>']}"

@@ -24,6 +24,12 @@ If, on the other hand, you're familiar with Python and its packaging system, you
 your environment as you see fit (e.g. using virtual environment). The only thing that is required
 is to install the packages in `requirements.txt`, usually done with `pip install -r requirements.txt`.
 
+### Get current version
+
+To print the current version of the app, run:
+
+    ./run --version
+
 ### Get help
 
 Run the following to see the help page on how to run this tool.
