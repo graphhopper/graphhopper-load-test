@@ -112,15 +112,10 @@ def run_locust_from_shell(settings):
 
 
 def run_locust_from_python(settings):
-    msg = ("I'm sorry, running the load test with some features that demand the programmatic "
-           "features of Locust is not supported yet because we're using latest Locust features, "
-           "that invokust doesn't support yet.")
-    print(msg)
-    sys.exit(1)
     locust_settings = invokust.create_settings(
         classes=[getattr(main, settings["persona_arg"])],
         host=settings["base_url"],
-        num_clients=settings["users"],
+        num_users=settings["users"],
         hatch_rate=settings["users"],
         run_time=settings["duration"],
     )
@@ -132,6 +127,7 @@ def run_locust_from_python(settings):
 
 
 def print_results(data):
+    print("")
     print(
         f"{'Name':<30} {'# reqs':>7} {'# fails':>12} {'Avg':>7} {'Min':>7} {'Max':>7}  | {'Median':>7} {'req/s':>7}"
     )
@@ -146,10 +142,9 @@ def print_results(data):
             page[c] = (
                 f"{float(page[c]):>7.0f}" if page[c] is not None else f"{'N/A':>7}"
             )
-
         nice_name = name.replace("_", " ")
         num_fails = (
-            0 if name not in data["failures"] else data["failures"][name]["occurences"]
+            0 if name not in data["failures"] else data["failures"][name]["occurrences"]
         )
         print(
             f"{nice_name:<30} {page['num_requests']:>7} {num_fails:>12} {page['avg_response_time']} {page['min_response_time']} {page['max_response_time']}  | {page['median_response_time']} {page['total_rps']:>7.2f}"
@@ -157,7 +152,7 @@ def print_results(data):
     print("-" * 94)
     pages = data["requests"].values()
     total_num_requests = sum(page["num_requests"] for page in pages)
-    total_num_failures = sum(f["occurences"] for f in data["failures"].values())
+    total_num_failures = sum(f["occurrences"] for f in data["failures"].values())
     total_rps = sum(page["total_rps"] for page in pages)
     print(
         f"{'Total':<30} {total_num_requests:>7} {total_num_failures:>12} {' ':>34} {total_rps:>7.2f}"
@@ -165,7 +160,7 @@ def print_results(data):
 
     # Errors
     print("")
-    errors = sorted(data["failures"].values(), key=lambda x: -x["occurences"])
+    errors = sorted(data["failures"].values(), key=lambda x: -x["occurrences"])
     if not errors:
         print(color.green_bg("No errors!"))
     else:
@@ -174,7 +169,7 @@ def print_results(data):
         print("-" * 140)
         for error in errors:
             msg = f"{error['method']} {error['name']}: {error['error']}"
-            print(f"{error['occurences']:>13}  {msg}")
+            print(f"{error['occurrences']:>13}  {msg}")
         print("-" * 140)
 
 
