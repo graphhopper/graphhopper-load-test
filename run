@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Load test GraphHopper
-
+"""
 Usage:
   run <base_url> [--persona=<persona>] [--duration=<length>] [--users=<cnt>] [--custom-output] [--debug] [--vrp-tomtom-probability <prob>] [--vrp-profiles <profiles>] [--points <points>] [--num-points <num_points>] [--vrp-max-profiles <vrp_max_profiles>] [--vrp-max-locations <vrp_max_locations>] [--master] [--expect-workers <clients_count>] [--worker] [--master-host <IP>] [--api-key <api_key>]
 
@@ -37,7 +36,7 @@ import time
 
 def get_settings():
     # set arguments
-    args = docopt(__doc__)
+    args = docopt(__doc__, version="v1.0.0")
     settings = {}
     settings["base_url"] = (
         args["<base_url>"] if "http" in args["<base_url>"] else f"https://{args['<base_url>']}"
