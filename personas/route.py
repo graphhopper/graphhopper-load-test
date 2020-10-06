@@ -1,8 +1,8 @@
 from personas import common
 
+import locust
 from locust import TaskSet, task
 from locust.contrib.fasthttp import FastHttpUser
-from locust.wait_time import constant_pacing
 
 
 class PersonaTaskSet(TaskSet):
@@ -25,4 +25,4 @@ class PersonaRoute(FastHttpUser):
     weight = 1
     network_timeout = 3.0
     connection_timeout = 3.0
-    wait_time = constant_pacing(1.0)
+    wait_time = locust.wait_time.constant_pacing(1.0)
