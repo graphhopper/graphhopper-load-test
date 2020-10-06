@@ -1,7 +1,7 @@
 import random
+import locust
 from locust import TaskSet, task
 from locust.contrib.fasthttp import FastHttpUser
-from locust.wait_time import constant_pacing
 
 from personas import common
 
@@ -24,6 +24,4 @@ class PersonaRouteInvalid(FastHttpUser):
     weight = 1
     network_timeout = 3.0
     connection_timeout = 3.0
-    wait_time = constant_pacing(1.0)
-    # min_wait = 500
-    # max_wait = 700
+    wait_time = locust.wait_time.constant_pacing(1.0)
