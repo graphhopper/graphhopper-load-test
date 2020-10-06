@@ -39,7 +39,7 @@ CURRENT_VERSION = "v1.0.0"
 
 def get_settings():
     # set arguments
-    args = docopt(__doc__, version=CURRENT_VERSION)
+    args = docopt(__doc__)
     settings = {}
     settings["base_url"] = (
         args["<base_url>"] if "http" in args["<base_url>"] else f"https://{args['<base_url>']}"
@@ -186,6 +186,9 @@ def print_info(settings):
 
 if __name__ == "__main__":
 
+    print("Load test for GraphHopper services.")
+    print(f"Version: {CURRENT_VERSION}.")
+    print("")
     settings = get_settings()
     print_info(settings)
     run_locust(settings)
