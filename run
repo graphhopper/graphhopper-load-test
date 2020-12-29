@@ -26,15 +26,15 @@ Options:
 """
 from docopt import docopt
 from utils import color
-import invokust
 import main
 import os
-import subprocess
+import run_as_cli
+import run_as_lib
 import sys
 import time
 
 
-CURRENT_VERSION = "v1.0.0"
+CURRENT_VERSION = "v1.1.0"
 
 
 def get_settings():
@@ -47,6 +47,7 @@ def get_settings():
     settings["users"] = args["--users"]
     settings["duration"] = args["--duration"]
     settings["custom-output"] = args["--custom-output"]
+    settings["debug"] = args["--debug"]
 
     # set persona
     persona_mapping = {
@@ -93,86 +94,9 @@ def get_settings():
 
 def run_locust(settings):
     if settings["custom-output"]:
-        run_locust_from_python(settings)
+        run_as_lib.run(settings)
     else:
-        run_locust_from_shell(settings)
-
-
-def run_locust_from_shell(settings):
-    cmd = (
-        f"locust --headless --host {settings['base_url']} "
-        f"-u {settings['users']} -r {settings['users']}"
-    )
-    if not settings["worker"]:
-        cmd += f" --run-time {settings['duration']}"
-    if settings["master"]:
-        cmd += f" --master --expect-workers={settings['expect-workers']}"
-    if settings["worker"]:
-        cmd += f" --worker --master-host={settings['master-host']}"
-    cmd += f" -f main.py {settings['persona_arg']}"
-    subprocess.run(cmd.split(" "))
-
-
-def run_locust_from_python(settings):
-    locust_settings = invokust.create_settings(
-        classes=[getattr(main, settings["persona_arg"])],
-        host=settings["base_url"],
-        num_users=settings["users"],
-        hatch_rate=settings["users"],
-        run_time=settings["duration"],
-    )
-
-    loadtest = invokust.LocustLoadTest(locust_settings)
-    loadtest.run()
-    stats = loadtest.stats()
-    print_results(stats)
-
-
-def print_results(data):
-    print("")
-    print(
-        f"{'Name':<30} {'# reqs':>7} {'# fails':>12} {'Avg':>7} {'Min':>7} {'Max':>7}  | {'Median':>7} {'req/s':>7}"
-    )
-    print("-" * 94)
-    for name, page in data["requests"].items():
-        for c in [
-            "min_response_time",
-            "max_response_time",
-            "avg_response_time",
-            "median_response_time",
-        ]:
-            page[c] = (
-                f"{float(page[c]):>7.0f}" if page[c] is not None else f"{'N/A':>7}"
-            )
-        nice_name = name.replace("_", " ")
-        num_fails = (
-            0 if name not in data["failures"] else data["failures"][name]["occurrences"]
-        )
-        print(
-            f"{nice_name:<30} {page['num_requests']:>7} {num_fails:>12} {page['avg_response_time']} {page['min_response_time']} {page['max_response_time']}  | {page['median_response_time']} {page['total_rps']:>7.2f}"
-        )
-    print("-" * 94)
-    pages = data["requests"].values()
-    total_num_requests = sum(page["num_requests"] for page in pages)
-    total_num_failures = sum(f["occurrences"] for f in data["failures"].values())
-    total_rps = sum(page["total_rps"] for page in pages)
-    print(
-        f"{'Total':<30} {total_num_requests:>7} {total_num_failures:>12} {' ':>34} {total_rps:>7.2f}"
-    )
-
-    # Errors
-    print("")
-    errors = sorted(data["failures"].values(), key=lambda x: -x["occurrences"])
-    if not errors:
-        print(color.green_bg("No errors!"))
-    else:
-        print(color.red_bg("Error report:"))
-        print("# occurrences  Error")
-        print("-" * 140)
-        for error in errors:
-            msg = f"{error['method']} {error['name']}: {error['error']}"
-            print(f"{error['occurrences']:>13}  {msg}")
-        print("-" * 140)
+        run_as_cli.run(settings)
 
 
 def print_info(settings):

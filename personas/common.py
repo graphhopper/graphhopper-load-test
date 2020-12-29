@@ -3,8 +3,6 @@ import os
 import random
 import requests
 
-from locust import events
-
 
 def get_api_key_url_suffix(prefix):
     """Return something like `?key=1234567890` or empty if no key set"""
@@ -58,10 +56,3 @@ def get_points_query(task_set):
 
     num_points = 3 if "QUERY_POINTS_NUM" not in os.environ else int(os.environ["QUERY_POINTS_NUM"])
     return "&".join([f"point={lat},{lon}" for _ in range(num_points)])
-
-
-def setup_locust_debugging():
-    if "DEBUG" in os.environ and os.environ["DEBUG"] == "yes":
-        def report_error(request_type, name, response_time, exception, **kwargs):
-            print(f"Request {name} ({request_type}) failed: {exception}", flush=True)
-        events.request_failure.add_listener(report_error)
