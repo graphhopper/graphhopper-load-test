@@ -16,7 +16,6 @@ class PersonaTaskSet(TaskSet):
         self.max_profiles = int(os.environ["VRP_MAX_PROFILES"]) if "VRP_MAX_PROFILES" in os.environ else 1
         self.max_locations = int(os.environ["VRP_MAX_LOCATIONS"]) if "VRP_MAX_LOCATIONS" in os.environ else 10
         self.api_key_url_suffix = common.get_api_key_url_suffix("?")
-        common.setup_locust_debugging()
 
     @task
     def get_vrp(self):

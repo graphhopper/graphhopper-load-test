@@ -10,7 +10,6 @@ class PersonaTaskSet(TaskSet):
     def on_start(self):
         self.client.verify = False
         self.api_key_url_suffix = common.get_api_key_url_suffix("&")
-        common.setup_locust_debugging()
 
     @task
     def get_route(self):
