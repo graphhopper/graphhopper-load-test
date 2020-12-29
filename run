@@ -30,6 +30,7 @@ import main
 import os
 import run_as_cli
 import run_as_lib
+import signal
 import sys
 import time
 
@@ -108,8 +109,14 @@ def print_info(settings):
     print("Persona:  {}".format(color.green_bg(settings["persona_arg"])))
 
 
-if __name__ == "__main__":
+def setup_ctrlc_signal_handler():
+    def ctrlc_signal_handler(signal, frame):
+        sys.exit(0)
+    signal.signal(signal.SIGINT, ctrlc_signal_handler)
 
+
+if __name__ == "__main__":
+    setup_ctrlc_signal_handler()
     print("Load test for GraphHopper services.")
     print(f"Version: {CURRENT_VERSION}.")
     print("")

@@ -1,6 +1,6 @@
-from personas import common
-
 import locust
+import urllib
+from personas import common
 from locust import TaskSet, task
 from locust.contrib.fasthttp import FastHttpUser
 
@@ -10,13 +10,23 @@ class PersonaTaskSet(TaskSet):
     def on_start(self):
         self.client.verify = False
         self.api_key_url_suffix = common.get_api_key_url_suffix("&")
-        self.points_query = common.get_points_query(self)
+
+        # get points information, they need to be lon,lat
+        query = common.get_points_query(self)
+        points_str = urllib.parse.parse_qs(query)["point"]
+        self.points = [[p.split(",")[1], p.split(",")[0]] for p in points_str]
 
     @task
-    def get_matrix(self):
-        base_url = "/route"
-        path = f"{base_url}?{self.points_query}{self.api_key_url_suffix}"
-        self.client.get(path, name="Matrix", verify=False)
+    def post_matrix(self):
+        base_url = "/matrix"
+        path = f"{base_url}?{self.api_key_url_suffix}"
+        data = {"points": self.points, "out_arrays": ["times"]}
+
+        with self.client.post(path, catch_response=True, json=data) as response:
+            if response.status_code >= 400:
+                result = response.json()
+                msg = result["message"] if "message" in result else response
+                response.failure(msg)
 
 
 class PersonaMatrix(FastHttpUser):
