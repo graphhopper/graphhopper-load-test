@@ -20,7 +20,11 @@ class PersonaTaskSet(TaskSet):
     def post_matrix(self):
         base_url = "/matrix"
         path = f"{base_url}?{self.api_key_url_suffix}"
-        data = {"points": self.points, "out_arrays": ["times"]}
+        data = {
+            "points": self.points,
+            "out_arrays": ["times"],
+            "profile": "car"
+        }
 
         with self.client.post(path, catch_response=True, json=data) as response:
             if response.status_code >= 400:
