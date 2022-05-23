@@ -30,7 +30,7 @@ class PersonaTaskSet(TaskSet):
         payload = json.dumps(data)
 
         # optimize
-        url = f"/optimize{self.api_key_url_suffix}"
+        url = f"/vrp/optimize{self.api_key_url_suffix}"
         headers = {"content-type": "application/json"}
         with self.client.post(url, catch_response=True, data=payload, headers=headers, name="VRP complex Optimize", timeout=60) as response:
             if response.text is None:
@@ -49,7 +49,7 @@ class PersonaTaskSet(TaskSet):
             job_id = response.json()["job_id"]
 
         while True:
-            url = f"/solution/{job_id}{self.api_key_url_suffix}"
+            url = f"/vrp/solution/{job_id}{self.api_key_url_suffix}"
             with self.client.get(url, catch_response=True, name="VRP complex Solution", timeout=60) as response:
                 try:
                     response_data = response.json()
