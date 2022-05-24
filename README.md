@@ -53,8 +53,7 @@ In its most basic form, all you need to do to start a load testing session, is t
   * If you're testing the matrix service at `/matrix` on HTTPS, then the base URL would be
     `https://example.com/`.
   * If you're testing the VRP service at `/api/1/vrp` on port 8080, then the base URL would be
-    `http://example.com:8080/api/1/vrp`. VRP is a bit special, in this regard, as the VRP
-    subpath of the URL might get cut off from the final URL, depending on implementation.
+    `http://example.com:8080/api/1`.
 * [optional] set the API key using `--api-key [key]`
 
 ### Three ways of running

@@ -9,7 +9,7 @@ push: build
 	docker push graphhopper/load-testing:latest
 
 shell:
-	docker run -it graphhopper/load-testing bash
+	docker run -it -v ${PWD}:/app graphhopper/load-testing bash
 
 python:
-	docker run -it graphhopper/load-testing python
+	docker run -it -v ${PWD}:/app graphhopper/load-testing python
