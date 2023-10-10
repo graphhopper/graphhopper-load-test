@@ -1,3 +1,4 @@
+import json
 import locust
 import urllib
 from personas import common
@@ -28,7 +29,10 @@ class PersonaTaskSet(TaskSet):
 
         with self.client.post(path, catch_response=True, json=data) as response:
             if response.status_code >= 400:
-                result = response.json()
+                try:
+                    result = response.json()
+                except json.decoder.JSONDecodeError:
+                    result = {}
                 msg = result["message"] if "message" in result else response
                 response.failure(msg)
 
