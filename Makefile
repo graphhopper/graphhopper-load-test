@@ -8,6 +8,9 @@ build: Dockerfile
 push: build
 	docker push graphhopper/load-testing:latest
 
+push-amd64:
+	docker buildx build -t graphhopper/load-testing:latest --platform=linux/amd64 --push .
+
 shell:
 	docker run -it -v ${PWD}:/app graphhopper/load-testing bash
 
